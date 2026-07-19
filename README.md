@@ -12,7 +12,7 @@ data "oci_objectstorage_namespace" "ns" {
 }
 
 module "bucket" {
-  source = "github.com/cybercapybara/terraform-oci-object-storage"
+  source = "github.com/moveeeax/terraform-oci-object-storage"
 
   compartment_id = var.compartment_id
   namespace      = data.oci_objectstorage_namespace.ns.namespace

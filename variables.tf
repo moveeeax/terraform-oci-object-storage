@@ -36,7 +36,12 @@ variable "storage_tier" {
 }
 
 variable "versioning" {
-  description = "Object versioning mode for the bucket."
+  description = <<-EOT
+    Object versioning mode for the bucket. The Object Storage API accepts only
+    "Enabled" or "Disabled" when creating a bucket, and only "Enabled" or
+    "Suspended" when updating one — versioning cannot be returned to "Disabled"
+    once it has been enabled.
+  EOT
   type        = string
   default     = "Disabled"
 
@@ -53,13 +58,18 @@ variable "kms_key_id" {
 }
 
 variable "auto_tiering" {
-  description = "Auto-tiering setting for the bucket."
+  description = <<-EOT
+    Auto-tiering setting for the bucket. "InfrequentAccess" transitions objects
+    automatically between the Standard and InfrequentAccess tiers based on access
+    patterns; "Disabled" turns auto-tiering off. Note that "Enabled" is not a
+    valid value in the Object Storage API.
+  EOT
   type        = string
   default     = "Disabled"
 
   validation {
-    condition     = contains(["Enabled", "Disabled"], var.auto_tiering)
-    error_message = "auto_tiering must be Enabled or Disabled."
+    condition     = contains(["Disabled", "InfrequentAccess"], var.auto_tiering)
+    error_message = "auto_tiering must be Disabled or InfrequentAccess."
   }
 }
 

@@ -126,3 +126,23 @@ run "rejects_unknown_versioning" {
 
   expect_failures = [var.versioning]
 }
+
+run "rejects_non_ocid_compartment_id" {
+  command = plan
+
+  variables {
+    compartment_id = "my-compartment"
+  }
+
+  expect_failures = [var.compartment_id]
+}
+
+run "rejects_non_key_kms_key_id" {
+  command = plan
+
+  variables {
+    kms_key_id = "ocid1.vault.oc1..aaaaaaaaexamplevault"
+  }
+
+  expect_failures = [var.kms_key_id]
+}

@@ -1,6 +1,11 @@
 variable "compartment_id" {
-  description = "OCID of the compartment in which to create the bucket."
+  description = "OCID of the compartment in which to create the bucket. The tenancy OCID is accepted, since the root compartment is identified by it."
   type        = string
+
+  validation {
+    condition     = can(regex("^ocid1\\.(compartment|tenancy)\\.", var.compartment_id))
+    error_message = "compartment_id must be a compartment OCID (\"ocid1.compartment....\") or, for the root compartment, the tenancy OCID (\"ocid1.tenancy....\")."
+  }
 }
 
 variable "namespace" {
@@ -55,6 +60,11 @@ variable "kms_key_id" {
   description = "OCID of the KMS key used to encrypt objects. Null uses Oracle-managed encryption."
   type        = string
   default     = null
+
+  validation {
+    condition     = var.kms_key_id == null || can(regex("^ocid1\\.key\\.", var.kms_key_id))
+    error_message = "kms_key_id must be a KMS key OCID (\"ocid1.key....\") or null."
+  }
 }
 
 variable "auto_tiering" {

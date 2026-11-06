@@ -94,3 +94,69 @@ variable "defined_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "retention_rules" {
+  description = <<-EOT
+    Retention rules (WORM) for the bucket. Each rule needs a unique
+    display_name. Set time_amount and time_unit ("DAYS" or "YEARS") for a
+    time-bound rule; leave both null for an indefinite rule, which keeps every
+    object until the rule is removed.
+
+    time_rule_locked (RFC 3339, e.g. "2027-01-01T00:00:00Z") locks a
+    time-bound rule from that moment. Object Storage requires the lock time to
+    be at least 14 days in the future, and indefinite rules cannot be locked.
+    WARNING: once locked, a rule can only be removed by deleting the bucket,
+    and only increases of its duration are allowed.
+
+    Retention rules cannot be added while versioning is "Enabled". At most 100
+    rules per bucket.
+  EOT
+  type = list(object({
+    display_name     = string
+    time_amount      = optional(number)
+    time_unit        = optional(string)
+    time_rule_locked = optional(string)
+  }))
+  default  = []
+  nullable = false
+
+  validation {
+    condition     = length(var.retention_rules) <= 100
+    error_message = "retention_rules supports at most 100 rules per bucket."
+  }
+
+  validation {
+    condition     = length(distinct([for r in var.retention_rules : r.display_name])) == length(var.retention_rules)
+    error_message = "Each retention rule must have a unique display_name."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.retention_rules : try(trimspace(r.display_name) != "", false)])
+    error_message = "Each retention rule needs a non-empty display_name."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.retention_rules : (r.time_amount == null) == (r.time_unit == null)])
+    error_message = "Set time_amount and time_unit together for a time-bound rule, or leave both null for an indefinite rule."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.retention_rules : r.time_unit == null || contains(["DAYS", "YEARS"], coalesce(r.time_unit, "-"))])
+    error_message = "time_unit must be DAYS or YEARS."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.retention_rules : r.time_amount == null || try(r.time_amount >= 1 && floor(r.time_amount) == r.time_amount, false)])
+    error_message = "time_amount must be a whole number of at least 1."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.retention_rules : r.time_rule_locked == null || r.time_amount != null])
+    error_message = "time_rule_locked can only be set on a time-bound rule (with time_amount and time_unit); indefinite rules cannot be locked."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.retention_rules : r.time_rule_locked == null || can(formatdate("YYYY", coalesce(r.time_rule_locked, "-")))])
+    error_message = "time_rule_locked must be an RFC 3339 timestamp, for example \"2027-01-01T00:00:00Z\"."
+  }
+}
